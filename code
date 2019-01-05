@@ -9,7 +9,9 @@ train = pd.read_csv("BD.csv", delimiter = ';')
 
 train = train.drop(['Id', 'ID collecteur'], axis = 1)
 
-#Mise en forme
+# RASSEMBLEMENT DES COLONNES REDONDANTES 
+
+# - Fréquence binge drinking
 
 train.loc[train['frqb1'] == 1, 'binge'] = 1
 train.loc[train['frqb2'] == 2, 'binge'] = 2
@@ -19,6 +21,8 @@ train.loc[train['frqb10'] == 5, 'binge'] = 5
 
 train = train.drop(['frqb1', 'frqb2', 'frqb3', 'frqb6', 'frqb10'], axis = 1)
 
+# - Type logement
+
 train.loc[train['logwho2'] == 1, 'logwho'] = 1
 train.loc[train['logwho3'] == 2, 'logwho'] = 2
 train.loc[train['logwho5'] == 4, 'logwho'] = 4
@@ -26,23 +30,8 @@ train.loc[train['logwho4'] == 3, 'logwho'] = 3
      
 train = train.drop(['logwho2', 'logwho3', 'logwho4', 'logwho5'], axis = 1)
 
-train['age'].fillna(train['age'].median(), inplace = True)
-train['logou'].fillna(train['logou'].median(), inplace = True)
-train['logwho'].fillna(train['logwho'].median(), inplace = True)
-train['bours'].fillna(train['bours'].median(), inplace = True)
-train['fin'].fillna(train['fin'].median(), inplace = True)
-train['franc'].fillna(train['franc'].median(), inplace = True)
-train['ald'].fillna(train['ald'].median(), inplace = True)
-train['sex'].fillna(train['sex'].median(), inplace = True)
-train['niv'].fillna(train['niv'].median(), inplace = True)
-train['disc'].fillna(train['disc'].median(), inplace = True)
-train['frqoh'].fillna(train['frqoh'].mode()[0], inplace = True)
-train['binge'].fillna(train['binge'].mode()[0], inplace = True)
-train['max1occ'].fillna(train['max1occ'].mode()[0], inplace = True)
-train['nbvrtyp'].fillna(train['nbvrtyp'].mode()[0], inplace = True)
-train['sixvr'].fillna(train['sixvr'].mode()[0], inplace = True)
 
-#Création du paramètre consommation:
+# - Création du paramètre consommation:
 
 train['Conso'] = 0
 
@@ -58,6 +47,63 @@ train.loc[(train['Total Conso'] <= 13), 'Conso'] = 0
 train.loc[(train['Total Conso'] > 13), 'Conso'] = 1
 
 train = train.drop(['Total Conso', 'max1occ', 'sixvr', 'nbvrtyp', 'binge', 'frqoh'], axis = 1)
+
+
+
+## ============== TRI DES DONNEES ========================
+
+# - Analyse colonne par colonne
+
+for column in train.columns:
+    print (column)
+    valeurs, occurences = np.unique(train[column], return_counts=True)
+    print (valeurs)
+    print(occurences)
+
+# - Catégories d'age
+
+train['age'].fillna(train['age'].median(), inplace = True)
+
+train.loc[(train['age'] > 15) & (train['age'] <= 18), 'age'] = 1
+train.loc[(train['age'] > 18) & (train['age'] <= 24), 'age'] = 2
+train.loc[(train['age'] > 24) & (train['age'] <= 30), 'age'] = 3
+train.loc[ train['age'] > 30, 'age'] = 4
+
+# Remplacement des NaN restants par la moyenne 
+
+colonnes = train.columns[:]
+
+for colonne in colonnes:
+    train[colonne].fillna(int(train[colonne].median()), inplace = True)
+    
+
+## =================================== CONVERSION EN MATRIX + CROSS VALIDATION ====================================
+
+# ---------- Version A : utilisation de k-fold ------------------
+
+# Conversion DataFrame to matrix
+ 
+trainY = np.array(train.Conso)
+train = train.drop(['Conso'], axis = 1)
+trainX = np.array(train)
+N_train = len(train_X)
+
+# Cross validation
+
+from sklearn import cross_validation
+
+kf = cross_validation.KFold(train.shape[0], n_folds = 4)      #on trouve des résultats bien différents en fct de n_folds (choix de la taille du train/test)
+
+for trainIndex, testIndex in kf:
+    train_X = trainX[trainIndex]
+    test_X = trainX[testIndex]
+    train_Y = trainY[trainIndex]
+    test_Y = trainY[testIndex]
+	
+print(train_X.shape[0], test_X.shape[0])
+
+
+# ------------Version B: travail sur une partie des data ----------------
 
 test = train[3001 : 6002]
 train = train[ : 3001]
